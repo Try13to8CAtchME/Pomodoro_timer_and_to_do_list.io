@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block title %}
+<title>Pomodoro Timer</title>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid text-center text-white">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-12 col-md-8 col-lg-6">
+            <header class="mb-5">
+                <h1 class="display-4 fw-bold mb-3">POMODORO ТАЙМЕР</h1>
+                <nav class="nav justify-content-center">
+                    <a class="nav-link text-white fw-bold fs-5" href="/about">
+                        📝 СПИСОК ДЕЛ
+                    </a>
+                </nav>
+            </header>
+
+            <!-- таймер -->
+            <main class="my-5">
+                <div class="pomodoro-timer display-1 fw-bold mb-4" id="timer" style="color: #8b0000; text-shadow: 0 0 20px rgba(139, 0, 0, 0.5);">
+                    25:00
+                </div>
+
+                <!-- старт, стоп, ресет -->
+                <div class="btn-group mb-5" role="group">
+                    <button class="btn btn-dark-red btn-lg px-4" id="startBtn">START</button>
+                    <button class="btn btn-danger btn-lg px-4" id="stopBtn" style="display: none;">STOP</button>
+                    <button class="btn btn-secondary btn-lg px-4" id="resetBtn">RESET</button>
+                </div>
+
+                <!-- режимы таймера -->
+                <div class="py-4">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-dark-red active fw-bold fs-5" data-minutes="25">
+                            Pomodoro (25м)
+                        </button>
+                        <button class="btn btn-outline-dark-red fw-bold fs-5" data-minutes="5">
+                            Перерыв (5м)
+                        </button>
+                        <button class="btn btn-outline-dark-red fw-bold fs-5" data-minutes="15">
+                            Длинный перерыв (15м)
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- статус работы -->
+            <footer class="mt-5">
+                <div id="status" class="text-white-50 fs-5">Готов к работе!</div>
+                <div id="quote" class="text-white fs-6 mt-2 fst-italic" style="min-height: 30px;"></div>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<script>
+    class PomodoroTimer {
+        constructor() {
+            this.timerSettings = window.themeManager ? window.themeManager.getTimerSettings() : {
+                pomodoro: 25,
+                shortBreak: 5,
+                longBreak: 15
+            };
+
+            this.timeLeft = this.timerSettings.pomodoro * 60;
+            this.isRunning = false;
+            this.timerInterval = null;
+            this.quoteManager = new QuoteManager();
+
+            this.initializeElements();
+            this.attachEventListeners();
+            this.updateModeButtons();
+            this.updateDisplay();
+            this.setupThemeListener();
+        }
+
+        initializeElements() {
+            this.timer = document.getElementById('timer');
+            this.startBtn = document.getElementById('startBtn');
+            this.stopBtn = document.getElementById('stopBtn');
+            this.resetBtn = document.getElementById('resetBtn');
+            this.status = document.getElementById('status');
+            this.modeButtons = document.querySelectorAll('[data-minutes]');
+        }
+
+        attachEventListeners() {
+            this.startBtn.addEventListener('click', () => this.start());
+            this.stopBtn.addEventListener('click', () => this.stop());
+            this.resetBtn.addEventListener('click', () => this.reset());
+
+            this.modeButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => this.changeMode(e.target));
+            });
+        }
+
+        setupThemeListener() {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        this.updateButtonStyles();
+                    }
+                });
+            });
+
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+
+        refreshSettings() {
+            if (window.themeManager) {
+                const oldSettings = { ...this.timerSettings };
+                this.timerSettings = window.themeManager.getTimerSettings();
+                this.updateModeButtons();
+
+                if (JSON.stringify(oldSettings) !== JSON.stringify(this.timerSettings)) {
+                    this.updateTimerForCurrentMode();
+                }
+            }
+        }
+
+        updateTimerForCurrentMode() {
+            const activeMode = document.querySelector('[data-minutes].active');
+            if (activeMode) {
+                const minutes = parseInt(activeMode.dataset.minutes);
+                this.timeLeft = minutes * 60;
+                this.updateDisplay();
+
+                if (minutes === this.timerSettings.pomodoro) {
+                    this.quoteManager.showStatus(`Режим: Pomodoro (${minutes} минут работы)`);
+                } else if (minutes === this.timerSettings.shortBreak) {
+                    this.quoteManager.showStatus(`Режим: Короткий перерыв (${minutes} минут)`);
+                } else {
+                    this.quoteManager.showStatus(`Режим: Длинный перерыв (${minutes} минут)`);
+                }
+            } else {
+                this.timeLeft = this.timerSettings.pomodoro * 60;
+                this.updateDisplay();
+                this.quoteManager.showStatus('Готов к работе!');
+            }
+        }
+
+        updateModeButtons() {
+            if (this.modeButtons.length >= 3) {
+                this.modeButtons[0].dataset.minutes = this.timerSettings.pomodoro;
+                this.modeButtons[0].textContent = `Pomodoro (${this.timerSettings.pomodoro}м)`;
+
+                this.modeButtons[1].dataset.minutes = this.timerSettings.shortBreak;
+                this.modeButtons[1].textContent = `Перерыв (${this.timerSettings.shortBreak}м)`;
+
+                this.modeButtons[2].dataset.minutes = this.timerSettings.longBreak;
+                this.modeButtons[2].textContent = `Длинный перерыв (${this.timerSettings.longBreak}м)`;
+            }
+        }
+
+        updateButtonStyles() {
+            const isGreenTheme = document.body.classList.contains('theme-green');
+
+            this.modeButtons.forEach(btn => {
+                btn.classList.remove('btn-outline-dark-red', 'btn-outline-dark-green');
+                btn.classList.add(isGreenTheme ? 'btn-outline-dark-green' : 'btn-outline-dark-red');
+            });
+
+            this.startBtn.classList.remove('btn-dark-red', 'btn-dark-green');
+            this.startBtn.classList.add(isGreenTheme ? 'btn-dark-green' : 'btn-dark-red');
+        }
+
+        start() {
+            if (!this.isRunning) {
+                this.isRunning = true;
+
+                this.startBtn.style.display = 'none';
+                this.stopBtn.style.display = 'inline-block';
+
+                this.quoteManager.showStatus('Таймер работает... Сосредоточься!');
+                this.quoteManager.startQuotes();
+
+                this.timerInterval = setInterval(() => this.tick(), 1000);
+            }
+        }
+
+        stop() {
+            this.isRunning = false;
+            clearInterval(this.timerInterval);
+
+            this.startBtn.style.display = 'inline-block';
+            this.stopBtn.style.display = 'none';
+
+            this.quoteManager.showStatus('Таймер остановлен');
+            this.quoteManager.stopQuotes();
+        }
+
+        reset() {
+            this.stop();
+            this.timeLeft = this.getInitialTime();
+            this.updateDisplay();
+            this.quoteManager.showStatus('Готов к работе!');
+        }
+
+        tick() {
+            this.timeLeft--;
+            this.updateDisplay();
+
+            if (this.timeLeft <= 0) {
+                this.complete();
+            }
+        }
+
+        complete() {
+            this.stop();
+            alert('✅ Pomodoro завершен! Отличная работа!');
+        }
+
+        changeMode(button) {
+            if (this.isRunning) {
+                alert('⏸ Сначала остановите таймер!');
+                return;
+            }
+
+            this.modeButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const minutes = parseInt(button.dataset.minutes);
+            this.timeLeft = minutes * 60;
+            this.updateDisplay();
+
+            if (minutes === this.timerSettings.pomodoro) {
+                this.quoteManager.showStatus(`Режим: Pomodoro (${minutes} минут работы)`);
+            } else if (minutes === this.timerSettings.shortBreak) {
+                this.quoteManager.showStatus(`Режим: Короткий перерыв (${minutes} минут)`);
+            } else {
+                this.quoteManager.showStatus(`Режим: Длинный перерыв (${minutes} минут)`);
+            }
+        }
+
+        getInitialTime() {
+            const activeMode = document.querySelector('[data-minutes].active');
+            if (activeMode) {
+                return parseInt(activeMode.dataset.minutes) * 60;
+            }
+            return this.timerSettings.pomodoro * 60;
+        }
+
+        updateDisplay() {
+            const minutes = Math.floor(this.timeLeft / 60);
+            const seconds = this.timeLeft % 60;
+            this.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    class QuoteManager {
+        constructor() {
+            this.quotes = [
+                "Все начинается с невозможного.",
+                "Сложности — это то, что показывает, кто вы есть на самом деле.",
+                "Ключ к успеху — начинать раньше, чем вы готовы.",
+                "Путь в тысячу миль начинается с одного шага.",
+                "Чем ожесточеннее борьба, тем славнее триумф.",
+                "Секрет успеха – начать действовать.",
+                "Упорный труд побеждает талант, когда талант не работает упорно.",
+                "Поверь, что ты можешь, и ты уже на полпути к цели.",
+                "Лучший способ предсказать будущее – это создать его.",
+                "Не забывай о жизни, которую ты себе обещал.",
+                "Мечты не работают, если не работаешь ты.",
+                "Через не могу."
+            ];
+            this.quoteElement = document.getElementById('quote');
+            this.statusElement = document.getElementById('status');
+            this.currentQuoteIndex = 0;
+            this.quoteInterval = null;
+        }
+
+        startQuotes() {
+            this.showNextQuote();
+            this.quoteInterval = setInterval(() => this.showNextQuote(), 60000);
+        }
+
+        stopQuotes() {
+            if (this.quoteInterval) {
+                clearInterval(this.quoteInterval);
+                this.quoteInterval = null;
+            }
+            this.quoteElement.textContent = '';
+        }
+
+        showNextQuote() {
+            this.quoteElement.style.opacity = '0';
+
+            setTimeout(() => {
+                this.quoteElement.textContent = this.quotes[this.currentQuoteIndex];
+                this.quoteElement.style.opacity = '1';
+
+                this.currentQuoteIndex = (this.currentQuoteIndex + 1) % this.quotes.length;
+            }, 500);
+        }
+
+        showStatus(message) {
+            this.statusElement.textContent = message;
+        }
+    }
+
+    let pomodoroTimer;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        pomodoroTimer = new PomodoroTimer();
+        window.pomodoroTimer = pomodoroTimer;
+    });
+
+    document.addEventListener('timerSettingsUpdated', function() {
+        if (window.pomodoroTimer) {
+            window.pomodoroTimer.refreshSettings();
+        }
+    });
+</script>
+
+<style>
+    .btn-group .btn {
+        margin: 0 2px;
+    }
+
+    .btn-outline-dark-red, .btn-outline-dark-green {
+        background-color: transparent;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-dark-red:hover, .btn-outline-dark-green:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-dark-red, .btn-dark-green {
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-dark-red:hover, .btn-dark-green:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-group .btn {
+            margin: 2px 0;
+        }
+
+        .pomodoro-timer {
+            font-size: 3.5rem !important;
+        }
+    }
+</style>
+{% endblock %}

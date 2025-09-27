@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+
+{% block title %}TO DO LIST{% endblock %}
+
+{% block body %}
+<style>
+    .theme-red .task-item {
+        background: linear-gradient(135deg, #ffdbdb 0%, #ffc8c8 100%) !important;
+        border: 2px solid #ff9c9c !important;
+    }
+
+    .theme-red .task-item:hover {
+        background: linear-gradient(135deg, #ffc8c8 0%, #ffb5b5 100%) !important;
+        border-color: #ff8080 !important;
+    }
+
+    .theme-red .task-item.completed {
+        background: linear-gradient(135deg, #e6b3b3 0%, #d9a3a3 100%) !important;
+        border: 2px solid #cc7a7a !important;
+    }
+
+    .theme-red .card {
+        background-color: #fff0f0 !important;
+    }
+
+    .theme-red .custom-bg {
+        background-color: #ffebeb !important;
+    }
+
+    .theme-red .btn-outline-primary {
+        color: #8b0000 !important;
+        border-color: #8b0000 !important;
+    }
+
+    .theme-red .btn-outline-primary:hover,
+    .theme-red .btn-outline-primary.active {
+        color: white !important;
+        background-color: #8b0000 !important;
+    }
+
+    .theme-red .badge.bg-primary {
+        background: linear-gradient(135deg, #8b0000 0%, #a52a2a 100%) !important;
+    }
+
+    .theme-red .btn-primary {
+        background: linear-gradient(135deg, #8b0000 0%, #a52a2a 100%) !important;
+        border: none !important;
+    }
+
+    .theme-red .btn-outline-danger {
+        color: #dc3545 !important;
+        border-color: #dc3545 !important;
+    }
+
+    .theme-red .btn-outline-danger:hover {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+
+    /* зеленая тема */
+    .theme-green .task-item {
+        background: linear-gradient(135deg, #e8f5e8 0%, #d0f0d0 100%) !important;
+        border: 2px solid #90ee90 !important;
+    }
+
+    .theme-green .task-item:hover {
+        background: linear-gradient(135deg, #d0f0d0 0%, #b8e6b8 100%) !important;
+        border-color: #7cfc7c !important;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(100, 255, 100, 0.2);
+    }
+
+    .theme-green .task-item.completed {
+        background: linear-gradient(135deg, #c8e6c8 0%, #b0d0b0 100%) !important;
+        border: 2px solid #80c080 !important;
+        opacity: 0.9;
+    }
+
+    .theme-green .task-item.completed:hover {
+        background: linear-gradient(135deg, #b0d0b0 0%, #98b898 100%) !important;
+        border-color: #70a070 !important;
+    }
+
+    .theme-green .card {
+        background-color: #f0fff0 !important;
+        border: none !important;
+        border-radius: 15px !important;
+    }
+
+    .theme-green .custom-bg {
+        background-color: #e8f5e8 !important;
+    }
+
+    .theme-green .btn-outline-primary {
+        color: #006400 !important;
+        border-color: #006400 !important;
+        background-color: transparent;
+    }
+
+    .theme-green .btn-outline-primary:hover,
+    .theme-green .btn-outline-primary.active {
+        color: white !important;
+        background-color: #006400 !important;
+        border-color: #006400 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 100, 0, 0.3);
+    }
+
+    .theme-green .badge.bg-primary {
+        background: linear-gradient(135deg, #006400 0%, #228B22 100%) !important;
+        color: white !important;
+        border: 1px solid #006400;
+    }
+
+    .theme-green .btn-primary {
+        background: linear-gradient(135deg, #006400 0%, #228B22 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: bold;
+    }
+
+    .theme-green .btn-primary:hover {
+        background: linear-gradient(135deg, #228B22 0%, #006400 100%) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 100, 0, 0.4);
+    }
+
+    .theme-green .btn-outline-danger {
+        color: #228B22 !important;
+        border-color: #228B22 !important;
+    }
+
+    .theme-green .btn-outline-danger:hover {
+        background-color: #228B22 !important;
+        border-color: #228B22 !important;
+        color: white !important;
+    }
+
+    .theme-green .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        border: none !important;
+    }
+
+    .theme-green .btn-warning {
+        background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%) !important;
+        border: none !important;
+        color: #5d4037 !important;
+    }
+
+    .theme-green .btn-warning:hover {
+        background: linear-gradient(135deg, #ffb74d 0%, #ffa726 100%) !important;
+        color: #3e2723 !important;
+    }
+
+    .theme-green .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        border: none !important;
+    }
+
+    .task-item {
+        border-radius: 12px !important;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .task-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+
+    .task-item.completed .card-title {
+        text-decoration: line-through;
+        color: #666 !important;
+    }
+
+    .task-description {
+        max-width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        line-height: 1.4;
+        max-height: 4.2em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+
+    .task-title {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        line-height: 1.3;
+        max-height: 2.6em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .task-content {
+        flex: 1;
+        min-width: 0;
+        margin-right: 15px;
+    }
+
+    .task-buttons {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .task-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: nowrap;
+    }
+
+    .form-check-input:checked {
+        background-color: #8b0000 !important;
+        border-color: #8b0000 !important;
+    }
+
+    .theme-green .form-check-input:checked {
+        background-color: #006400 !important;
+        border-color: #006400 !important;
+    }
+
+    .form-check-input:focus {
+        border-color: #8b0000 !important;
+        box-shadow: 0 0 0 0.2rem rgba(139, 0, 0, 0.25) !important;
+    }
+
+    .theme-green .form-check-input:focus {
+        border-color: #006400 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 100, 0, 0.25) !important;
+    }
+
+    .btn {
+        transition: all 0.3s ease !important;
+        border-radius: 8px !important;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-group {
+        flex-shrink: 0;
+    }
+
+    .card-body {
+        padding: 1rem;
+        min-width: 0;
+    }
+
+    @media (max-width: 768px) {
+        .task-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .task-buttons {
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .task-content {
+            margin-right: 0;
+            width: 100%;
+        }
+
+        .task-title {
+            -webkit-line-clamp: 3;
+            max-height: 3.9em;
+        }
+
+        .btn-group {
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="/" class="btn btn-primary">
+                ← Назад к таймеру
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-4 text-white mb-3">TO DO LIST</h1>
+            <p class="lead text-white">Добавляйте задачи - структурируйте свою работу!</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <div class="card shadow-lg custom-bg">
+                        <div class="card-body p-4">
+                            <h4 class="card-title mb-4">📝 Добавить новую задачу</h4>
+                            <form method="POST">
+                                <div class="mb-3">
+                                    <label for="taskTitle" class="form-label fw-bold">Название задачи</label>
+                                    <input type="text" class="form-control form-control-lg" id="taskTitle"
+                                           name="title" placeholder="Что нужно сделать?" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="taskDescription" class="form-label fw-bold">Описание</label>
+                                    <textarea class="form-control" id="taskDescription" name="description"
+                                              placeholder="Дополнительные детали..." rows="4"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    ➕ Добавить задачу
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card shadow-lg custom-bg">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="card-title mb-0">📋 Ваши задачи</h4>
+                                <span class="badge bg-primary rounded-pill fs-6">
+                                    {{ tasks|selectattr('completed')|list|length }}/{{ tasks|length }}
+                                </span>
+                            </div>
+
+                            <div class="d-flex gap-2 mb-4">
+                                <button class="btn btn-outline-primary btn-sm filter-btn active"
+                                        onclick="filterTasks('all')">Все</button>
+                                <button class="btn btn-outline-primary btn-sm filter-btn"
+                                        onclick="filterTasks('active')">Активные</button>
+                                <button class="btn btn-outline-primary btn-sm filter-btn"
+                                        onclick="filterTasks('completed')">Выполненные</button>
+                            </div>
+
+                            <div class="tasks-list">
+                                {% if tasks %}
+                                    {% for task in tasks %}
+                                    <div class="task-item card mb-3 {% if task.completed %}completed{% endif %}"
+                                         data-status="{% if task.completed %}completed{% else %}active{% endif %}">
+                                        <div class="card-body">
+                                            <div class="task-container">
+                                                <div class="d-flex align-items-center task-content">
+                                                    <input class="form-check-input me-3" type="checkbox"
+                                                           {% if task.completed %}checked{% endif %}
+                                                           onchange="window.location.href='/complete/{{ task.id }}'"
+                                                           style="width: 1.2em; height: 1.2em; flex-shrink: 0;">
+                                                    <div style="flex: 1; min-width: 0;">
+                                                        <h5 class="card-title mb-1 task-title {% if task.completed %}text-decoration-line-through text-muted{% endif %}">
+                                                            {{ task.title }}
+                                                        </h5>
+                                                        {% if task.description %}
+                                                        <p class="card-text text-muted mb-1 small task-description">
+                                                            {{ task.description }}
+                                                        </p>
+                                                        {% endif %}
+                                                        <small class="text-muted">
+                                                            Создано: {{ task.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div class="task-buttons">
+                                                    <div class="btn-group">
+                                                        <a href="/complete/{{ task.id }}"
+                                                           class="btn btn-sm {% if task.completed %}btn-warning{% else %}btn-success{% endif %}">
+                                                            {% if task.completed %}↶ Вернуть{% else %}✓ Выполнить{% endif %}
+                                                        </a>
+                                                        <a href="/delete/{{ task.id }}"
+                                                           class="btn btn-sm btn-danger"
+                                                           onclick="return confirm('Удалить задачу?')">
+                                                            🗑 Удалить
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-5">
+                                        <div class="text-muted">
+                                            <h5>📭 Пока нет задач</h5>
+                                            <p>Добавьте первую задачу используя форму слева!</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {% if tasks %}
+                            <div class="mt-4">
+                                <a href="/clear_completed" class="btn btn-outline-danger btn-sm w-100"
+                                   onclick="return confirm('Удалить все выполненные задачи?')">
+                                    🧹 Очистить выполненные
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterTasks(filter) {
+        const tasks = document.querySelectorAll('.task-item');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        tasks.forEach(task => {
+            const status = task.getAttribute('data-status');
+
+            switch(filter) {
+                case 'all':
+                    task.style.display = 'block';
+                    break;
+                case 'active':
+                    task.style.display = status === 'active' ? 'block' : 'none';
+                    break;
+                case 'completed':
+                    task.style.display = status === 'completed' ? 'block' : 'none';
+                    break;
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

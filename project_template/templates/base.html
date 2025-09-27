@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}Pomodoro Timer{% endblock %}</title>
+    <style>
+        .theme-red {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+        }
+
+        .theme-red .btn-dark-red {
+            background-color: #8b0000;
+            border-color: #8b0000;
+            color: white;
+        }
+
+        .theme-red .btn-dark-red:hover {
+            background-color: #a52a2a;
+            border-color: #a52a2a;
+        }
+
+        .theme-red .btn-outline-dark-red {
+            color: #8b0000;
+            border-color: #8b0000;
+        }
+
+        .theme-red .btn-outline-dark-red:hover,
+        .theme-red .btn-outline-dark-red.active {
+            color: white;
+            background-color: #8b0000;
+            border-color: #8b0000;
+        }
+
+        .theme-green {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+
+        .theme-green .btn-dark-green {
+            background-color: #006400;
+            border-color: #006400;
+            color: white;
+        }
+
+        .theme-green .btn-dark-green:hover {
+            background-color: #228B22;
+            border-color: #228B22;
+        }
+
+        .theme-green .btn-outline-dark-green {
+            color: #006400;
+            border-color: #006400;
+        }
+
+        .theme-green .btn-outline-dark-green:hover,
+        .theme-green .btn-outline-dark-green.active {
+            color: white;
+            background-color: #006400;
+            border-color: #006400;
+        }
+
+        body {
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+
+        .disabled-link {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        #quote {
+            transition: opacity 0.5s ease-in-out;
+            min-height: 30px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            transition: right 0.3s ease;
+            z-index: 1050;
+            padding: 20px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            right: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        .menu-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1060;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255,255,255,1);
+        }
+
+        .theme-option {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-weight: 500;
+        }
+
+        .theme-option:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .theme-option.active {
+            border-color: #333;
+            transform: translateX(10px);
+        }
+
+        .theme-red-option {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+        }
+
+        .theme-green-option {
+            background: linear-gradient(135deg, #56ab2f 0%, #7bcfa5 100%);
+            color: white;
+        }
+
+        .theme-preview {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .sidebar h4 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .settings-section {
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .settings-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .timer-settings {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .timer-settings.open {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .time-input-group {
+            margin-bottom: 15px;
+        }
+
+        .time-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .save-settings-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .save-settings-btn:hover {
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            transform: translateY(-1px);
+        }
+
+        .current-time {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body class="theme-red">
+    <!-- кнопка меню -->
+    <button class="menu-btn" id="menuBtn" title="Открыть меню">
+        <span style="font-size: 20px; font-weight: bold;">☰</span>
+    </button>
+
+    <!-- закрытие меню -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- сайдбар -->
+    <div class="sidebar" id="sidebar">
+        <h4>🎨 Настройки</h4>
+
+        <!-- разные темы -->
+        <div class="theme-section">
+            <h5>Цветовая тема</h5>
+            <div class="theme-option theme-red-option active" data-theme="red">
+                <span class="theme-preview" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);"></span>
+                🔴 Красная тема
+            </div>
+            <div class="theme-option theme-green-option" data-theme="green">
+                <span class="theme-preview" style="background: linear-gradient(135deg, #56ab2f 0%, #7bcfa5 100%);"></span>
+                🟢 Зеленая тема
+            </div>
+        </div>
+
+        <!-- настройки таймера -->
+        <div class="settings-section">
+            <button class="settings-btn" id="timerSettingsBtn">
+                ⚙️ Настройки таймера
+            </button>
+
+            <div class="timer-settings" id="timerSettings">
+                <div class="time-input-group">
+                    <label for="pomodoroTime">Помодоро (минуты):</label>
+                    <input type="number" class="time-input" id="pomodoroTime" min="1" max="60" value="25">
+                    <div class="current-time">Текущее: 25 минут</div>
+                </div>
+
+                <div class="time-input-group">
+                    <label for="shortBreakTime">Короткий перерыв (минуты):</label>
+                    <input type="number" class="time-input" id="shortBreakTime" min="1" max="30" value="5">
+                    <div class="current-time">Текущее: 5 минут</div>
+                </div>
+
+                <div class="time-input-group">
+                    <label for="longBreakTime">Длинный перерыв (минуты):</label>
+                    <input type="number" class="time-input" id="longBreakTime" min="1" max="60" value="15">
+                    <div class="current-time">Текущее: 15 минут</div>
+                </div>
+
+                <button class="save-settings-btn" id="saveTimerSettings">
+                    💾 Сохранить настройки
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% block body %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        class ThemeManager {
+            constructor() {
+                this.currentTheme = localStorage.getItem('theme') || 'red';
+                this.init();
+            }
+
+            init() {
+                this.applyTheme(this.currentTheme);
+                this.setupEventListeners();
+                this.loadTimerSettings();
+            }
+
+            applyTheme(theme) {
+                document.body.classList.remove('theme-red', 'theme-green');
+                document.body.classList.add(`theme-${theme}`);
+
+                localStorage.setItem('theme', theme);
+
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.classList.remove('active');
+                    if (option.dataset.theme === theme) {
+                        option.classList.add('active');
+                    }
+                });
+
+                this.updateTimerColor(theme);
+            }
+
+            updateTimerColor(theme) {
+                const timer = document.getElementById('timer');
+                if (timer) {
+                    if (theme === 'green') {
+                        timer.style.color = '#006400';
+                        timer.style.textShadow = '0 0 20px rgba(0, 100, 0, 0.5)';
+                    } else {
+                        timer.style.color = '#8b0000';
+                        timer.style.textShadow = '0 0 20px rgba(139, 0, 0, 0.5)';
+                    }
+                }
+            }
+
+            loadTimerSettings() {
+                const settings = JSON.parse(localStorage.getItem('timerSettings') || '{}');
+
+                this.timerSettings = {
+                    pomodoro: settings.pomodoro || 25,
+                    shortBreak: settings.shortBreak || 5,
+                    longBreak: settings.longBreak || 15
+                };
+
+                document.getElementById('pomodoroTime').value = this.timerSettings.pomodoro;
+                document.getElementById('shortBreakTime').value = this.timerSettings.shortBreak;
+                document.getElementById('longBreakTime').value = this.timerSettings.longBreak;
+
+                this.updateCurrentTimeDisplay();
+            }
+
+            saveTimerSettings() {
+                const pomodoroTime = parseInt(document.getElementById('pomodoroTime').value) || 25;
+                const shortBreakTime = parseInt(document.getElementById('shortBreakTime').value) || 5;
+                const longBreakTime = parseInt(document.getElementById('longBreakTime').value) || 15;
+
+                if (pomodoroTime < 1 || pomodoroTime > 60) {
+                    alert('Время Pomodoro должно быть от 1 до 60 минут');
+                    return;
+                }
+                if (shortBreakTime < 1 || shortBreakTime > 30) {
+                    alert('Время короткого перерыва должно быть от 1 до 30 минут');
+                    return;
+                }
+                if (longBreakTime < 1 || longBreakTime > 60) {
+                    alert('Время длинного перерыва должно быть от 1 до 60 минут');
+                    return;
+                }
+
+                this.timerSettings = {
+                    pomodoro: pomodoroTime,
+                    shortBreak: shortBreakTime,
+                    longBreak: longBreakTime
+                };
+
+                localStorage.setItem('timerSettings', JSON.stringify(this.timerSettings));
+                this.updateCurrentTimeDisplay();
+                this.updateModeButtons();
+                this.updateTimerImmediately();
+
+                alert('✅ Настройки сохранены! Таймер обновлен.');
+            }
+
+            updateTimerImmediately() {
+                const event = new CustomEvent('timerSettingsUpdated');
+                document.dispatchEvent(event);
+
+                if (window.pomodoroTimer) {
+                    window.pomodoroTimer.refreshSettings();
+
+                    const activeButton = document.querySelector('[data-minutes].active');
+                    if (activeButton) {
+                        const currentMinutes = parseInt(activeButton.dataset.minutes);
+                        window.pomodoroTimer.timeLeft = currentMinutes * 60;
+                        window.pomodoroTimer.updateDisplay();
+
+                        let statusText = 'Готов к работе!';
+                        if (currentMinutes === this.timerSettings.pomodoro) {
+                            statusText = `Режим: Pomodoro (${currentMinutes} минут работы)`;
+                        } else if (currentMinutes === this.timerSettings.shortBreak) {
+                            statusText = `Режим: Короткий перерыв (${currentMinutes} минут)`;
+                        } else if (currentMinutes === this.timerSettings.longBreak) {
+                            statusText = `Режим: Длинный перерыв (${currentMinutes} минут)`;
+                        }
+
+                        if (window.pomodoroTimer.quoteManager) {
+                            window.pomodoroTimer.quoteManager.showStatus(statusText);
+                        }
+                    }
+                }
+            }
+
+            updateCurrentTimeDisplay() {
+                document.querySelectorAll('.current-time')[0].textContent = `Текущее: ${this.timerSettings.pomodoro} минут`;
+                document.querySelectorAll('.current-time')[1].textContent = `Текущее: ${this.timerSettings.shortBreak} минут`;
+                document.querySelectorAll('.current-time')[2].textContent = `Текущее: ${this.timerSettings.longBreak} минут`;
+            }
+
+            updateModeButtons() {
+                const modeButtons = document.querySelectorAll('[data-minutes]');
+                if (modeButtons.length === 3) {
+                    modeButtons[0].dataset.minutes = this.timerSettings.pomodoro;
+                    modeButtons[0].textContent = `Pomodoro (${this.timerSettings.pomodoro}м)`;
+
+                    modeButtons[1].dataset.minutes = this.timerSettings.shortBreak;
+                    modeButtons[1].textContent = `Перерыв (${this.timerSettings.shortBreak}м)`;
+
+                    modeButtons[2].dataset.minutes = this.timerSettings.longBreak;
+                    modeButtons[2].textContent = `Длинный перерыв (${this.timerSettings.longBreak}м)`;
+                }
+            }
+
+            getTimerSettings() {
+                return this.timerSettings;
+            }
+
+            setupEventListeners() {
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        this.applyTheme(option.dataset.theme);
+                    });
+                });
+
+                document.getElementById('menuBtn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu();
+                });
+
+                document.getElementById('sidebarOverlay').addEventListener('click', () => {
+                    this.closeMenu();
+                });
+
+                document.getElementById('timerSettingsBtn').addEventListener('click', () => {
+                    this.toggleTimerSettings();
+                });
+
+                document.getElementById('saveTimerSettings').addEventListener('click', () => {
+                    this.saveTimerSettings();
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeMenu();
+                    }
+                });
+            }
+
+            toggleMenu() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+
+            closeMenu() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+                this.closeTimerSettings();
+            }
+
+            toggleTimerSettings() {
+                const settings = document.getElementById('timerSettings');
+                settings.classList.toggle('open');
+            }
+
+            closeTimerSettings() {
+                const settings = document.getElementById('timerSettings');
+                settings.classList.remove('open');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.themeManager = new ThemeManager();
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
